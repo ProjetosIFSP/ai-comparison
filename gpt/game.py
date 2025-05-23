@@ -102,8 +102,12 @@ while rodando:
     espaco.debug_draw(desenho_pymunk)
 
     # Desenhar a bola com a cor atual
+    # Desenhar a bola com a cor atual (sem espelhar)
+    # Desenhar a bola com espelhamento Y para alinhar Pygame (positivo para baixo)
     pos_bola = int(corpo_bola.position.x), altura - int(corpo_bola.position.y)
     pygame.draw.circle(tela, forma_bola.cor, pos_bola, int(forma_bola.radius))
+
+
 
     pygame.display.flip()
 
