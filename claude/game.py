@@ -2,6 +2,11 @@ import pygame
 import sys
 import math
 import random
+import os
+import cv2
+
+sys.path.append('/home/abner/Documentos/IFSP/7semestre/IA/teste-llm/.venv/lib/python3.12/site-packages')
+sys.path.insert(0, '/home/abner/Documentos/IFSP/7semestre/IA/teste-llm/.venv/lib/python3.12/site-packages')
 
 # Inicialização do Pygame
 pygame.init()
@@ -80,7 +85,7 @@ class Bola:
         self.raio = raio
         self.velocidade_x = 0
         self.velocidade_y = 0
-        self.gravidade = 0.5  # Aceleração devido à gravidade (pixels/segundo²)
+        self.gravidade = 5.0  # Aceleração devido à gravidade aumentada em 10x
         self.cor = VERMELHO
         self.amortecimento = 0.8  # Fator de amortecimento para colisões
     
@@ -89,8 +94,8 @@ class Bola:
         self.velocidade_y += self.gravidade * dt
         
         # Atualiza a posição com base na velocidade
-        self.x += self.velocidade_x * dt
-        self.y += self.velocidade_y * dt
+        self.x += self.velocidade_x * dt * 10  # Aumenta a velocidade em 10x
+        self.y += self.velocidade_y * dt * 10  # Aumenta a velocidade em 10x
         
         # Colisão com as bordas da tela (opcional, para evitar que a bola saia da tela)
         if self.x - self.raio < 0:
@@ -213,6 +218,19 @@ centro_x, centro_y = WIDTH // 2, HEIGHT // 2
 quadrado = Quadrado(centro_x, centro_y, lado_quadrado)
 bola = Bola(centro_x, centro_y, 15)  # Bola com raio de 15 pixels
 
+# Configurações para gravação de vídeo
+video_nome = "gameplay_claude.mp4"
+gif_nome = "gameplay_claude.gif"
+quadro_tamanho = (WIDTH, HEIGHT)
+fps = 30
+quadro_codificador = cv2.VideoWriter_fourcc(*"mp4v")
+video_writer = cv2.VideoWriter(video_nome, quadro_codificador, fps, quadro_tamanho)
+
+# Função para converter MP4 para GIF
+def converter_para_gif(video_path, gif_path):
+    comando = f"ffmpeg -i {video_path} -vf 'fps=10,scale=320:-1:flags=lanczos' {gif_path}"
+    os.system(comando)
+
 # Loop principal do jogo
 running = True
 while running:
@@ -240,9 +258,17 @@ while running:
     quadrado.desenhar(screen)
     bola.desenhar(screen)
     
+    # Gravação de vídeo
+    frame = pygame.surfarray.array3d(pygame.display.get_surface())
+    frame = cv2.cvtColor(cv2.transpose(frame), cv2.COLOR_RGB2BGR)
+    video_writer.write(frame)
+    
     # Atualiza a tela
     pygame.display.flip()
 
+# Libera o gravador de vídeo e converte para GIF
+video_writer.release()
+converter_para_gif(video_nome, gif_nome)
+
 # Encerra o Pygame
 pygame.quit()
-sys.exit()

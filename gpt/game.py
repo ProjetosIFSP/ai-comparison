@@ -3,6 +3,8 @@ import pymunk
 import pymunk.pygame_util
 import random
 import math
+import cv2
+import os
 
 # Inicialização do Pygame
 pygame.init()
@@ -17,6 +19,19 @@ espaco.gravity = (0, -900)  # Gravidade para baixo no sistema padrão Y↑
 
 # Utilitário para desenhar com Pygame
 desenho_pymunk = pymunk.pygame_util.DrawOptions(tela)
+
+# Configurações para gravação de vídeo
+video_nome = "gameplay_gpt.mp4"
+gif_nome = "gameplay_gpt.gif"
+quadro_tamanho = (largura, altura)
+fps = 30
+quadro_codificador = cv2.VideoWriter_fourcc(*"mp4v")
+video_writer = cv2.VideoWriter(video_nome, quadro_codificador, fps, quadro_tamanho)
+
+# Função para converter MP4 para GIF
+def converter_para_gif(video_path, gif_path):
+    comando = f"ffmpeg -i {video_path} -vf 'fps=10,scale=320:-1:flags=lanczos' {gif_path}"
+    os.system(comando)
 
 # =======================
 # Parâmetros do Quadrado
@@ -82,8 +97,9 @@ handler.begin = callback_colisao
 # Loop principal do jogo
 # ============================
 rodando = True
-while rodando:
-    dt = relogio.tick(60) / 1000.0  # Tempo por frame
+frames = 0
+while rodando and frames < 90:  # Limita a 3 segundos (30 FPS)
+    dt = relogio.tick(30) / 1000.0  # Tempo por frame
     tela.fill((0, 0, 0))  # Fundo preto
 
     # Eventos
@@ -102,13 +118,19 @@ while rodando:
     espaco.debug_draw(desenho_pymunk)
 
     # Desenhar a bola com a cor atual
-    # Desenhar a bola com a cor atual (sem espelhar)
-    # Desenhar a bola com espelhamento Y para alinhar Pygame (positivo para baixo)
     pos_bola = int(corpo_bola.position.x), altura - int(corpo_bola.position.y)
     pygame.draw.circle(tela, forma_bola.cor, pos_bola, int(forma_bola.radius))
 
-
+    # Captura o quadro atual da tela
+    quadro = pygame.surfarray.array3d(pygame.display.get_surface())
+    quadro = cv2.cvtColor(cv2.transpose(quadro), cv2.COLOR_RGB2BGR)
+    video_writer.write(quadro)
 
     pygame.display.flip()
+    frames += 1
+
+# Libera o gravador de vídeo e converte para GIF
+video_writer.release()
+converter_para_gif(video_nome, gif_nome)
 
 pygame.quit()

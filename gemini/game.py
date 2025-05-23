@@ -1,6 +1,10 @@
 import pygame
 import math
 import random
+import cv2
+import os
+import sys
+sys.path.insert(0, '/home/abner/Documentos/IFSP/7semestre/IA/teste-llm/.venv/lib/python3.12/site-packages')
 
 # Inicialização do Pygame
 pygame.init()
@@ -43,6 +47,18 @@ cor_bola = pygame.Color(VERMELHO)
 # Gravidade: No Pygame, o eixo Y positivo é para baixo.
 ACELERACAO_GRAVIDADE = pygame.math.Vector2(0, 350)  # pixels/s^2
 
+# Para gravação
+gravando = False
+frames = []
+
+# Configurações para gravação de vídeo
+video_nome = "gameplay_gemini.mp4"
+gif_nome = "gameplay_gemini.gif"
+quadro_tamanho = (LARGURA_TELA, ALTURA_TELA)
+fps = 30
+quadro_codificador = cv2.VideoWriter_fourcc(*"mp4v")
+video_writer = cv2.VideoWriter(video_nome, quadro_codificador, fps, quadro_tamanho)
+
 def rotacionar_vertices(vertices_locais, angulo_graus, centro_rotacao):
     """
     Rotaciona uma lista de vértices locais em torno da origem e depois os translada para o centro_rotacao.
@@ -78,6 +94,11 @@ def ponto_mais_proximo_no_segmento(ponto_externo, seg_ponto_a, seg_ponto_b):
         return seg_ponto_b # Ponto mais próximo é o fim do segmento
     else:
         return seg_ponto_a + t * vetor_segmento # Projeção está no segmento
+
+# Função para converter MP4 para GIF
+def converter_para_gif(video_path, gif_path):
+    comando = f"ffmpeg -i {video_path} -vf 'fps=10,scale=320:-1:flags=lanczos' {gif_path}"
+    os.system(comando)
 
 # Loop principal do jogo
 rodando = True
@@ -175,5 +196,15 @@ while rodando:
 
     pygame.display.flip() # Atualiza a tela inteira para mostrar o que foi desenhado
 
-# Finalização do Pygame
+    # Gravação de vídeo
+    frame = pygame.surfarray.array3d(pygame.display.get_surface())
+    frame = cv2.cvtColor(cv2.transpose(frame), cv2.COLOR_RGB2BGR)
+    video_writer.write(frame)
+
+# Libera o gravador de vídeo e converte para GIF
+video_writer.release()
+converter_para_gif(video_nome, gif_nome)
+
 pygame.quit()
+
+print("Gravação concluída!")

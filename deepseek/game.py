@@ -3,6 +3,9 @@ import pymunk
 import pymunk.pygame_util
 import random
 import math
+import imageio
+import os
+import cv2
 
 # Inicialização do Pygame
 pygame.init()
@@ -98,6 +101,19 @@ def setup_collision_handler(ball_shape):
     handler.post_solve = handle_collision
     handler.data["ball_shape"] = ball_shape
 
+# Configurações para gravação de vídeo
+video_nome = "gameplay_deepseek.mp4"
+gif_nome = "gameplay_deepseek.gif"
+quadro_tamanho = (WIDTH, HEIGHT)
+fps = 30
+quadro_codificador = cv2.VideoWriter_fourcc(*"mp4v")
+video_writer = cv2.VideoWriter(video_nome, quadro_codificador, fps, quadro_tamanho)
+
+# Função para converter MP4 para GIF
+def converter_para_gif(video_path, gif_path):
+    comando = f"ffmpeg -i {video_path} -vf 'fps=10,scale=320:-1:flags=lanczos' {gif_path}"
+    os.system(comando)
+
 def main():
     clock = pygame.time.Clock()
     running = True
@@ -108,6 +124,9 @@ def main():
     
     # Configuramos o handler de colisão
     setup_collision_handler(ball_shape)
+    
+    # Para gravação
+    frames = []
     
     while running:
         dt = 1/60.0  # Tempo fixo para física estável
@@ -123,6 +142,18 @@ def main():
                     space.remove(ball_body, ball_shape)
                     ball_body, ball_shape = create_ball()
                     setup_collision_handler(ball_shape)
+                elif event.key == pygame.K_g:  # Gravar vídeo
+                    # Iniciar gravação
+                    frames = []
+                    print("Gravação iniciada...")
+                elif event.key == pygame.K_s:  # Parar gravação e salvar
+                    # Parar gravação
+                    print("Gravação parada. Salvando vídeo...")
+                    # Salvar como MP4
+                    imageio.mimsave('gravacao.mp4', frames, fps=60)
+                    # Converter para GIF
+                    imageio.mimsave('gravacao.gif', frames, fps=60)
+                    print("Vídeo salvo como 'gravacao.mp4' e 'gravacao.gif'")
         
         # Atualização do quadrado
         update_square_rotation(square_body, dt)
@@ -152,10 +183,23 @@ def main():
         ball_pos = int(ball_body.position.x), int(ball_body.position.y)
         pygame.draw.circle(screen, ball_shape.color, ball_pos, BALL_RADIUS)
         
+        # Gravação de vídeo
+        frame = pygame.surfarray.array3d(pygame.display.get_surface())
+        frame = cv2.cvtColor(cv2.transpose(frame), cv2.COLOR_RGB2BGR)
+        video_writer.write(frame)
+        
         # Atualização da tela
         pygame.display.flip()
         clock.tick(60)
     
+    # Certifique-se de que o gravador de vídeo seja liberado corretamente
+    video_writer.release()
+    # Verifica se o arquivo MP4 foi gerado antes de converter para GIF
+    if os.path.exists(video_nome):
+        converter_para_gif(video_nome, gif_nome)
+    else:
+        print(f"Erro: O arquivo {video_nome} não foi gerado corretamente.")
+
     pygame.quit()
 
 if __name__ == "__main__":
